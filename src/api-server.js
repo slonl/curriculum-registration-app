@@ -3,6 +3,11 @@ const fs        = require('fs');
 const path      = require('path');
 const url       = require('url');
 const { v4: uuidv4 } = require('uuid');
+const Mailjet = require('node-mailjet');
+const mailjet = Mailjet.apiConnect(
+    process.env.MJ_APIKEY_PUBLIC,
+    process.env.MJ_APIKEY_PRIVATE,
+);
 
 const app       = express();
 const port      = process.env.NODE_PORT || 4800;
@@ -28,11 +33,6 @@ app.use(function(req, res, next) {
 	res.header('Access-Control-Allow-Origin', req.headers.origin ? req.headers.origin : '*');
 	res.header('Access-Control-Allow-Headers', 'Authorization');
 
-/*
-    res.header('Access-Control-Allow-Origin', '*');
-    res.header('Access-Control-Allow-Headers', 
-               'Origin, X-Requested-With, Content-Type, Accept');
-               */
 	if ('OPTIONS' == req.method) {
 		res.sendStatus(200);
 		return;
@@ -42,8 +42,6 @@ app.use(function(req, res, next) {
 		let file = fs.readFileSync(filePath, 'utf8');
 		process.env.NODE_PORT = port;
 		process.env.NODE_BASE = apiBase;	
-//		process.env.NODE_ID_URL = baseIdURL;
-//		process.env.NODE_BACKEND_URL = backendUrl;
 		process.env.NODE_DATA_URL = baseDatasetURL;
 		file = file.replace(/\{@(.*)\}/gm, (match, p1) => process.env[p1] || '');
 		res.send(file);
@@ -90,35 +88,36 @@ function readKeys() {
 }
 
 function sendApiKey(email, key) {
-    console.log("sending email still to be implemented")
-    /*
-	var mail = {
-		from: {
-		email: "opendata@slo.nl",
-		name: "SLO Opendata",
-	  },
-	  to: {
-	  	email: email
-	  },
-	  subject: "SLO Opendata API Key",
-	  content: [
-	  	{
-	  		type: "text/html",
-	  		value: "<p>Bedankt voor het registreren op opendata.slo.nl. Je API key is:<br><b>" + key + "</p>",
-	      	},
-	    ],
-	}
+    console.log("sending email to : " + email + " with key:" + key + " still to be implemented")
     
-	sgMail.send(mail)
-	.then(function (response) {
-	    console.log(response[0].statusCode);
-	    console.log(response[0].headers);
-	    console.log("api key mail sent");
-	})
-	.catch(function (error) {
-	    console.log(error);
-	});
-    */
+    //Mailjet: from https://www.npmjs.com/package/node-mailjet
+    const request = mailjet
+        .post('send', { version: 'v3.1' })
+        .request({
+          Messages: [
+            {
+              From: {
+		        email: "opendata@slo.nl",
+		        name: "SLO Opendata",
+              },
+              To: [
+                {
+                  Email: email,
+                }
+              ],
+              Subject: "SLO Opendata API Key",
+              TextPart: "<p>Bedankt voor het registreren op opendata.slo.nl. Je API key is:<br><b>" + key + "</p>",
+            }
+          ]
+        })
+
+    request
+    .then((result) => {
+        console.log(result.body)
+    })
+    .catch((err) => {
+        console.log(err.statusCode)
+    })
 }
 
 app.listen(port, () => console.log(`API keys server listening on port ${port}!`));
