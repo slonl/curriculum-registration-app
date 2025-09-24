@@ -4,16 +4,17 @@ const path      = require('path');
 const url       = require('url');
 const { v4: uuidv4 } = require('uuid');
 const Mailjet = require('node-mailjet');
+
+const app       = express();
+const port      = process.env.NODE_PORT || 4800;
+const apiBase   = process.env.NODE_BASE || "http://localhost:4800/register/"; //"https://opendata.slo.nl/curriculum-registration-app/register/";
+const baseDatasetURL = process.env.NODE_DATA_URL || "http://localhost:4800/";  // 'https://opendata.slo.nl/curriculum-registration-app/';
+const baseDatasetPath = url.parse(baseDatasetURL).pathname;
+
 const mailjet = Mailjet.apiConnect(
     process.env.MJ_APIKEY_PUBLIC,
     process.env.MJ_APIKEY_PRIVATE,
 );
-
-const app       = express();
-const port      = process.env.NODE_PORT || 4800;
-const apiBase   = process.env.NODE_BASE || "http://localhost:4800/register/" //"https://opendata.slo.nl/curriculum-registration-app/register/";
-const baseDatasetURL = process.env.NODE_DATA_URL || "http://localhost:4800/"  // 'https://opendata.slo.nl/curriculum-registration-app/';
-const baseDatasetPath = url.parse(baseDatasetURL).pathname;
 
 const notfound  = { error: "not found"};
 
