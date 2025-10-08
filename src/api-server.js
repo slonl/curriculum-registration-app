@@ -6,15 +6,15 @@ const { v4: uuidv4 } = require('uuid');
 const Mailjet = require('node-mailjet');
 
 const app       = express();
-const port      = process.env.NODE_PORT || 4800;
-const apiBase   = process.env.NODE_BASE || "http://localhost:4800/register/"; //"https://opendata.slo.nl/curriculum-registration-app/register/";
-const baseDatasetURL = process.env.NODE_DATA_URL || "http://localhost:4800/";  // 'https://opendata.slo.nl/curriculum-registration-app/';
+const port      = process.env.NODE_PORT || 4800
+const apiBase   = process.env.NODE_BASE || "https://opendata.slo.nl/curriculum-registration-app/register/";
+const baseDatasetURL = process.env.NODE_DATA_URL || 'https://opendata.slo.nl/curriculum-registration-app/';
 const baseDatasetPath = url.parse(baseDatasetURL).pathname;
 
-const mailjet = Mailjet.apiConnect(
-    process.env.MJ_APIKEY_PUBLIC,
-    process.env.MJ_APIKEY_PRIVATE,
-);
+const mailjet = new Mailjet({
+  apiKey: process.env.MJ_APIKEY_PUBLIC,
+  apiSecret: process.env.MJ_APIKEY_PRIVATE
+});
 
 const notfound  = { error: "not found"};
 
@@ -71,7 +71,10 @@ app.route('/' + 'register/').get((req) => {
 			created : today
 		}
 		sendApiKey(user, keyData[user].key);
+	} else {
+		console.log("Er is al een key geregistreerd onder dit adres.")
 	}
+
 	fs.writeFile("apiKeys.json.new", JSON.stringify(keyData, null, 2), function() {
 		fs.rename("apiKeys.json.new", "apiKeys.json", readKeys);
 	});
@@ -89,7 +92,7 @@ function readKeys() {
 }
 
 function sendApiKey(email, key) {
-    console.log("sending email to : " + email + " with key:" + key + " still to be implemented")
+    console.log("sending email to : " + email + " with key: " + key )
     
     //Mailjet: from https://www.npmjs.com/package/node-mailjet
     const request = mailjet
