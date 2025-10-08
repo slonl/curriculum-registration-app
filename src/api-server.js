@@ -8,7 +8,7 @@ const Mailjet = require('node-mailjet');
 const app       = express();
 const port      = process.env.NODE_PORT || 4800
 const apiBase   = process.env.NODE_BASE || "https://opendata.slo.nl/curriculum-registration-app/register/";
-const baseDatasetURL = process.env.NODE_DATA_URL || 'https://opendata.slo.nl/curriculum-registration-app/';
+const baseDatasetURL = process.env.NODE_APIKEY_URL || 'https://opendata.slo.nl/curriculum-registration-app/';
 const baseDatasetPath = url.parse(baseDatasetURL).pathname;
 
 const mailjet = new Mailjet({
