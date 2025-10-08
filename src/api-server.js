@@ -11,7 +11,6 @@ const apiBase   = process.env.NODE_BASE //|| "https://opendata.slo.nl/curriculum
 const baseDatasetURL = process.env.NODE_APIKEY_URL //|| 'https://opendata.slo.nl/curriculum-registration-app/';
 const baseDatasetPath = url.parse(baseDatasetURL).pathname;
 
-
 const mailjet = new Mailjet({
   apiKey: process.env.MJ_APIKEY_PUBLIC,
   apiSecret: process.env.MJ_APIKEY_PRIVATE
