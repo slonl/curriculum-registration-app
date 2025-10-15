@@ -73,7 +73,7 @@ app.route('/' + 'register/').get((req) => {
 		}
 		sendApiKey(user, keyData[user].key);
 	} else {
-		console.log("Er is al een key geregistreerd onder dit adres.")
+		sendApiKey(user, keyData[user].key);
 	}
 
 	fs.writeFile("apiKeys.json.new", JSON.stringify(keyData, null, 2), function() {
