@@ -94,8 +94,7 @@ function readKeys() {
 
 function sendApiKey(email, key) {
     console.log("sending email to : " + email + " with key: " + key )
-    
-	/*
+    	
     //Mailjet: from https://www.npmjs.com/package/node-mailjet
     const request = mailjet
         .post('send', { version: 'v3.1' })
@@ -112,7 +111,7 @@ function sendApiKey(email, key) {
                 }
               ],
               Subject: "SLO Opendata API Key",
-              TextPart: "<p>Bedankt voor het registreren op opendata.slo.nl. Je API key is:<br><b>" + key + "</p>",
+              TextPart: "Bedankt voor het registreren op opendata.slo.nl. Je API key is: '" + key + "' .",
             }
           ]
         })
@@ -124,7 +123,7 @@ function sendApiKey(email, key) {
     .catch((err) => {
         console.log(err.statusCode)
     })
-	*/
+	
 }
 
 app.listen(port, () => console.log(`API keys server listening on port ${port}!`));
