@@ -92,9 +92,7 @@ function readKeys() {
 	apiKeys = keyData;
 }
 
-function sendApiKey(email, key) {
-    console.log("sending email to : " + email + " with key: " + key )
-    	
+function sendApiKey(email, key) {   	
     //Mailjet: from https://www.npmjs.com/package/node-mailjet
     const request = mailjet
         .post('send', { version: 'v3.1' })
