@@ -81,17 +81,15 @@
         },
         commands: {
             register : async function(form, values) {
-                browser.view.error = '';
-                const result = await browser.actions.register(values.email);
-                if (result) {
-                    browser.view.view = "registered";
-                }
+                await browser.actions.register(values.email);
             }
         },
         actions: {
             register : async function(email) {
+                browser.view.error = '';
                 try {
-                    return await api.register(email);
+                    await api.register(email);
+                    browser.view.view = "registered";
                 } catch(err) {
                     if (err.error) {
                         browser.view.error = err.error
