@@ -1,11 +1,11 @@
 {
   "name": "curriculum-registration-app",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "api key generator",
   "main": "src/api-server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node --env-file=.env src/api-server.js"
+    "start": "node src/api-server.js"
   },
   "repository": {
     "type": "git",

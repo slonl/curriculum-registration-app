@@ -5,14 +5,6 @@
 <base href="{@NODE_DATA_URL}">
 <div class="slo-header">
     <img class="slo-logo" src="/img/header-logo-opendata.svg" alt="SLO / opendata">
-    <nav class="ds-align-right">
-        <ul class="ds-navbar-nav ds-paging">
-            <li class="ds-paging-info">
-                <span data-simply-field="page"></span> /
-                <span data-simply-field="max"></span>
-            </li>
-        </ul>
-    </nav>
 </div>
 <main class="slo-main">
     <nav class="slo-menu" data-simply-path="/">
@@ -38,21 +30,13 @@
         </ul>
     </nav>
     <div class="slo-content-panel">
-        <div class="error" data-simply-field="error" data-simply-content="template" data-simply-transformer="truthy">
-            <template data-simply-template="false"></template>
-            <template data-simply-template="true">
-                <span data-simply-field="error"></span>: <span data-simply-field="errorMessage"></span>
-            </template>
-        </div>
+        <div class="error" data-simply-field="error"></div>
             
         <section class="slo-text-content" data-simply-field="view" data-simply-content="template">
-            <template data-simply-template="notfound">
-                <h1>404: Page Not Found</h1>
-                <p>Sorry, deze pagina bestaat niet.</p>
-            </template>
             <template data-simply-template="register">
                 <h1>API Key registreren</h1>
                 <p>Vul hier het e-mailadres in. De API key wordt naar dit adres toegestuurd.</p>
+                <div class="slo-error" data-simply-field="registerError"></div>
                 <form data-simply-command="register" method="GET">
                     <label>E-mail:
                         <input type="text" name="email">
@@ -63,10 +47,6 @@
             <template data-simply-template="registered">
                 <h1>Bedankt!</h1>
                 <p>De API key wordt binnen een aantal uur per e-mail verstuurd.</p>
-            </template>
-               <template data-simply-template="registerError">
-                <h1>Foutmelding: </h1>
-                <p>Het ziet er naar uit dat dit email adres al gebruikt wordt, neem contact op met opendata@slo.nl voor wijziging.</p>
             </template>
         </section>
     </div>
@@ -83,13 +63,6 @@
     </nav>
 </footer>
 
-<template id="refs">
-    <li>
-        <a class="ds-badge" href="#" data-simply-field="$ref" data-simply-content="fixed">
-            <span data-simply-field="title">titel</span>
-        </a>
-    </li>
-</template>
 <script src="//cdn.simplyedit.io/1/simply-edit.js"
     data-api-key="flashy-leather-7944"
     data-simply-images="/img/"
@@ -99,137 +72,58 @@
 ></script>
 <script src="//unpkg.com/simplyview@2.0.1/dist/simply.everything.js"></script>
 <script>
-    function getPath(url) {
-        var anchor = document.createElement('a');
-        anchor.href= url;
-        return anchor.pathname;
-    }
-
-    var release = {
-        basePath: getPath('{@NODE_BASE}'),
-        apiPath: getPath('{@NODE_DATA_URL}')
-    };
-
-    simply.route.init({
-        root: release.apiPath
-    });
-
     var browser = simply.app({
         container: document.body,
-        routes: {
-            '/register/': function(params) { 
-                browser.view.view = 'register';
-            },
-            
+        routes: {        
             '/': function(params) {
                 browser.view.view = 'register';
-            },
-            '/([^#]+):*': function(params) {
-                if (params.remainder) {
-                    browser.actions.notfound(params.remainder);
-                }
             }
         },
         commands: {
-            register : function(el, value) {
-                var email = encodeURIComponent(el.querySelector("input").value);
-                browser.actions.register(email);
-                browser.view.view = "registered";
+            register : async function(form, values) {
+                browser.view.error = '';
+                const result = await browser.actions.register(values.email);
+                if (result) {
+                    browser.view.view = "registered";
+                }
             }
         },
         actions: {
-           updatePaging: function(count) {
-                if (!count || count<browser.view.pageSize) {
-                    document.body.classList.remove('ds-paging');
-                } else {
-                    document.body.classList.add('ds-paging');
-                    var total = parseInt(count);
-                    var pages = total / browser.view.pageSize;
-                    browser.view.max = Math.ceil(pages);
+            register : async function(email) {
+                try {
+                    return await api.register(email);
+                } catch(err) {
+                    if (err.error) {
+                        browser.view.error = err.error
+                    } else {
+                        browser.view.error = err.message
+                    }
                 }
-                MathJax.Hub.Queue(["Typeset",MathJax.Hub]);
-            },
-            notfound: function(remainder) {
-                browser.view.view = 'notfound';
-                browser.actions.updatePaging();
-            },
-            register : function(email) {
-                var url = release.apiPath+'register/';
-                slo.api.get(url + "?email=" + email);
             }
         }
     });
 
-    browser.view.pageSize = 1;
-
-    (function() {
-        var goto = simply.route.goto;
-        simply.route.goto = function(path) {
-            return goto(path);
-        };
-    })();
-    
-      
-    const baseURL = '{@NODE_BASE}';
-    let apiURL  = '{@NODE_DATA_URL}';
-    if (apiURL[apiURL.length-1]=='/') {
-        apiURL = apiURL.substr(0,-1);
-    }
-
-    var slo = {
-        api: {
-            get: function(path, params) {
-                var url = apiURL + path;
-                if (!params && window.location.search) {
-                    url = url + window.location.search;
+    const api = {
+        register: async function(email) {
+            const url = 'register?email='+encodeURIComponent(email);
+            const response = await fetch(url, {
+                headers: {
+                    'Accept': 'application/json'
                 }
-                if (params) {
-                    var args = Object.keys(params).map(function(param) {
-                        return encodeURIComponent(param)+'='+encodeURIComponent(params[param]);
-                    }).join('&');
-                    url = url + '?' + args;
-                }
-                return fetch(url, {
-                    headers: {
-                        'Accept': 'application/json',
-                        'Authorization': 'Basic b3BlbmRhdGFAc2xvLm5sOjM1ODUwMGQzLWNmNzktNDQwYi04MTdkLTlmMGVmOWRhYTM5OQ=='
-                    }
-                })
-                .then(function(response) {
-                    var json = response.json();
-                    if (response.ok) {
-                        return json;
-                    }
-                    return json.then(Promise.reject.bind(Promise));
-                })
-                .then(function(json) {
-                    if (json.error) {
-                        browser.view.error = json.error;
-                    } else {
-                        browser.view.error = '';
-                    }
-                    return json;
-                })
-                .catch(error => {
-                    browser.view.error = error.error;
-                    browser.view.errorMessage = error.message;
-                });
+            })
+            let message = await response.text();
+            try {
+                message = JSON.parse(message);
+            } catch(err) {
+                throw new Error(message);
+            }
+            if (response.ok) {
+                return message
+            } else {
+                throw message
             }
         }
     }
-        
-    editor.transformers.addTrailingSlash = {
-        render: function(data) {
-            this.originalValue = data;
-            if(data[data.length-1] != "/") {
-                data += "/";
-            }
-            return data;
-        },
-        extract: function(data) {
-            return this.originalValue;
-        }
-    };
     
     document.addEventListener('simply-content-loaded', function(evt) {
         var menu = editor.currentData['/']?.menu;
@@ -237,35 +131,6 @@
             var api = menu[1].submenu[0]['data-simply-template'] = 'api';
         }
     });
-    
-    var parseQueryString = function( queryString ) {
-        var params = {}, queries, temp, i, l;
-        if (queryString) {
-            // Split into key/value pairs
-            queries = queryString.split("&");
-            // Convert the array of strings into an object
-            for ( i = 0, l = queries.length; i < l; i++ ) {
-                temp = queries[i].split('=');
-                params[temp[0]] = temp[1];
-            }
-        }
-        return params;
-    };
-    
-    var args = parseQueryString(window.location.search.substring(1, window.location.search.length));
-    if (!args.page) {
-        args.page = 0;
-    }
-    browser.view.page = parseInt(args.page)+1;
-    browser.view.params = args;
 
-</script>
-<script type="text/x-mathjax-config">
-MathJax.Hub.Config({
-  tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}
-});
-</script>
-<script type="text/javascript" async
-  src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-MML-AM_CHTML">
 </script>
 </body>
