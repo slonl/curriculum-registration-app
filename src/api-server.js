@@ -1,60 +1,30 @@
 const express   = require('express');
 const fs        = require('fs');
-const path      = require('path');
-const url       = require('url');
-const crypto 	= require('crypto');
+const crypto 	  = require('crypto');
 const Mailjet 	= require('node-mailjet');
 
 const app       = express();
-const port      = process.env.NODE_PORT //|| 4800;
-const apiBase   = process.env.NODE_BASE //|| "https://opendata.slo.nl/curriculum-registration-app/register/";
-const baseDatasetURL = process.env.NODE_APIKEY_URL //|| 'https://opendata.slo.nl/curriculum-registration-app/';
-const baseDatasetPath = url.parse(baseDatasetURL).pathname;
+const port      = process.env.NODE_PORT;
 
 const mailjet = new Mailjet({
   apiKey: process.env.MJ_APIKEY_PUBLIC,
   apiSecret: process.env.MJ_APIKEY_PRIVATE
 });
 
-
-const notfound  = { error: "not found"};
-
-const baseVariables = { 
-		'baseDatasetURL' : baseDatasetURL,
-}
-
-function getVars(params={}) {
-	Object.assign(params, baseVariables)
-	return params
-}
-
-app.use(express.static(process.cwd()+'/www'))
-
-app.use(function(req, res, next) {
-	res.header('Access-Control-Allow-Credentials', true);
-	res.header('Access-Control-Allow-Origin', req.headers.origin ? req.headers.origin : '*');
-	res.header('Access-Control-Allow-Headers', 'Authorization');
-
-	if ('OPTIONS' == req.method) {
-		res.sendStatus(200);
-		return;
-	} else if (req.accepts('html')) {
-		res.set('Content-Type', 'text/html');
-		let filePath = path.join(__dirname, '../data-browser/', 'index.html');
-		let file = fs.readFileSync(filePath, 'utf8');
-		process.env.NODE_PORT = port;
-		process.env.NODE_BASE = apiBase;	
-		process.env.NODE_DATA_URL = baseDatasetURL;
-		file = file.replace(/\{@(.*)\}/gm, (match, p1) => process.env[p1] || '');
-		res.send(file);
+app.route('/').get((req, res) => {
+	var user = req.query.email;
+	if (!user) {
+		res.status(400);
+		res.send('Geen email opgegeven');
 		return;
 	}
-	next();
-});
+	const emailRE = /^.*@.*\.[^\.]{2,}$/
+	if (!emailRE.test(user)) {
+		res.status(400);
+		res.send('Ongeldig email adres opgegeven');
+		return;
+	}
 
-
-app.route('/' + 'register/').get((req) => {
-	var user = req.query.email;
 	console.log("Register " + user);
 	
 	var keyData = fs.readFileSync("apiKeys.json", "utf8");
@@ -65,36 +35,35 @@ app.route('/' + 'register/').get((req) => {
 	var mm = String(today.getMonth() + 1).padStart(2, '0'); //January is 0!
 	var yyyy = today.getFullYear();
 	today = yyyy + '-' + mm + '-' + dd;
-	
-	if (!keyData[user]) {
-		keyData[user] = {
-			key : crypto.randomUUID(),
-			created : today
-		}
-		sendApiKey(user, keyData[user].key);
-	} else {
-		sendApiKey(user, keyData[user].key);
-	}
 
-	fs.writeFile("apiKeys.json.new", JSON.stringify(keyData, null, 2), function() {
-		fs.rename("apiKeys.json.new", "apiKeys.json", readKeys);
-	});
+	let message = '';
+  try {
+		if (!keyData[user]) {
+			keyData[user] = {
+				key : crypto.randomUUID(),
+				created : today
+			};
+			sendApiKey(user, keyData[user].key);
+			message = 'APIKey aangemaakt en verstuurd';
+		} else {
+			sendApiKey(user, keyData[user].key);
+			message = 'APIKey opnieuw verstuurd';
+		}
+
+		fs.writeFileSync("apiKeys.json.new", JSON.stringify(keyData, null, 2));
+		fs.renameSync("apiKeys.json.new", "apiKeys.json");
+		res.send(message);
+	} catch(err) {
+		res.status(500);
+		res.send(err.message);
+		console.error(err.message);
+	}
 });
 
-function readKeys() {
-	var keyData = fs.readFileSync("apiKeys.json", "utf8");
-	try {
-		keyData = JSON.parse(keyData);
-	} catch (e) {
-		console.log("Invalid JSON in key API data");
-		console.log(e);
-	}
-	apiKeys = keyData;
-}
-
-function sendApiKey(email, key) {   	
+async function sendApiKey(email, key) {
     //Mailjet: from https://www.npmjs.com/package/node-mailjet
-    const request = mailjet
+		try {
+		    await mailjet
         .post('send', { version: 'v3.1' })
         .request({
           Messages: [
@@ -112,16 +81,11 @@ function sendApiKey(email, key) {
               TextPart: "Bedankt voor het registreren op opendata.slo.nl. Je API key is: '" + key + "' .",
             }
           ]
-        })
-
-    request
-    .then((result) => {
-        console.log(result.body)
-    })
-    .catch((err) => {
-        console.log(err.statusCode)
-    })
-	
+        });
+     } catch(err) {
+     		console.error(err);
+     		throw new Error('Kon geen email versturen, probeer het later nog eens.');
+     }
 }
 
 app.listen(port, () => console.log(`API keys server listening on port ${port}!`));
